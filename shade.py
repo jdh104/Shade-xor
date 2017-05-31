@@ -49,12 +49,19 @@ def keystream(key, size):
 def xor_with_file(file_1, file_2):
 	x, y = file_1.read(1), file_2.read(1)
 	z = fopen(".shade.temp", "wb+")
-	while x != b'':
+	flag1, flag2 = False, False
+	while (not flag1) or (not flag2):
 		z.write(bytes([ord(x) ^ ord(y)]))
 		x, y = file_1.read(1), file_2.read(1)
+		if (x == b''):
+			file_1.seek(0)
+			x = file_1.read(1)
+			z.seek(0)
+			flag1 = True
 		if (y == b''):
 			file_2.seek(0)
 			y = file_2.read(1)
+			flag2 = True
 	return z
 
 def xor_with_key(op, key):
@@ -66,6 +73,28 @@ def xor_with_key(op, key):
 		x = op.read(1)
 		i += 1
 	return z
+
+# Do not use, irreversible as is
+def shift_bytes(bytes_1, bytes_2):
+	if len(bytes_1) != len(bytes_2):
+		log("Error: shift_bytes not same length")
+		return None
+	else:
+		result = []
+		for i in range(len(bytes_1)):
+			result.append(bytes_1[i] >> bytes_2[i]) # NOT COMPLETE, NEED TO ROTATE
+		return result
+
+# Do not use, irreversible as is
+def unshift_bytes(bytes_1, bytes_2):
+	if len(bytes_1) != len(bytes_2):
+		log("Error: unshift_bytes not same length")
+		return None
+	else:
+		result = []
+		for i in range(len(bytes_1)):
+			result.append(bytes_1[i] << bytes_2[i]) # NOT COMPLETE, NEED TO ROTATE
+		return result
 
 def overwrite(fro, to):
 	to.seek(0)
