@@ -12,8 +12,8 @@ key_type_group = parser.add_mutually_exclusive_group(required = True)
 key_type_group.add_argument("-p", metavar = "<K>", dest = "p", help = "Use Passphrase <K> as key", default = None)
 key_type_group.add_argument("-F", metavar = "<K>", dest = "F", help = "Use File <K> as key", default = None)
 key_type_group.add_argument("-G", metavar = "<K>", dest = "G", help = "Generate keyfile named <K>", default = None)
-parser.add_argument("-s", metavar = "<S>", dest = "s", help = "Generate random key of size <S> in bytes (Default: 4096) Ignored if -G not used", default = 4096, type = int)
-parser.add_argument("f", metavar = "<file>", help = "File to operate on")
+parser.add_argument("-s", metavar = "<S>", dest = "s", help = "Generate random key of size <S> in bytes (Default: 64) Ignored if -G not used", default = 64, type = int)
+parser.add_argument("f", metavar = "<file>", help = "File(s) to operate on", nargs = "*")
 
 args = parser.parse_args()
 
@@ -47,11 +47,16 @@ def keystream(key, size):
 
 # Basic xor crypto, returns array of bytes
 def xor_with_file(file_1, file_2):
+	log("\nOperating on " + file_1.name + " ...")
 	x, y = file_1.read(1), file_2.read(1)
 	z = fopen(".shade.temp", "wb+")
 	flag1, flag2 = False, False
+	goal = max(os.path.getsize(file_1.name), os.path.getsize(file_2.name))
+	mile = 1
+	i = 0
 	while (not flag1) or (not flag2):
 		z.write(bytes([ord(x) ^ ord(y)]))
+		i += 1
 		x, y = file_1.read(1), file_2.read(1)
 		if (x == b''):
 			file_1.seek(0)
@@ -62,16 +67,27 @@ def xor_with_file(file_1, file_2):
 			file_2.seek(0)
 			y = file_2.read(1)
 			flag2 = True
+		if (i * 100) / goal > mile:
+			log(str(i * 100 / goal)[:5] + "%")
+			mile = (i * 100 / goal) + 1
+			sys.stderr.flush()
 	return z
 
 def xor_with_key(op, key):
+	log("\nOperating on " + op.name + " ...")
 	x = op.read(1)
 	z = fopen(".shade.temp", "wb+")
+	goal = max(os.path.getsize(op.name), len(key))
+	mile = 1
 	i = 0
 	while x != b'':
 		z.write(bytes([ord(x) ^ ord(key[i])]))
 		x = op.read(1)
 		i += 1
+		if (i * 100) / goal > mile:
+			log(str(i * 100 / goal)[:5] + "%")
+			mile = (i * 100 / goal) + 1
+			sys.stderr.flush()
 	return z
 
 # Do not use, irreversible as is
@@ -123,26 +139,29 @@ def generate_key_file(name, strength):
 #####################################################
 #####################################################
 
-operand = fopen(args.f, "rb+")
 keyfile = None
 key = None
-result = None
 
-if args.p != None:
-	key = args.p
-elif args.F != None:
+if args.G:
+	keyfile = generate_key_file(args.G, args.s)
+elif args.F:
 	keyfile = fopen(args.F, "rb+")
-else: #if args.G
-	keyfile = generate_key_file(args.G, args.s) 
+else: #if args.p
+	key = args.p
 
-if (key == None):
-	if keyfile == None:
-		terminate("Error: No valid key given")
-	else:
+if key == None and keyfile == None:
+	terminate("Error: No valid key given")
+
+for op in args.f:
+	operand = fopen(op, "rb+")
+	result = None
+	
+	if keyfile != None:
 		result = xor_with_file(operand, keyfile)
-else:
-	key = keystream(key, os.path.getsize(operand.name))
-	result = xor_with_key(operand, key)
-overwrite(result, operand)
-os.remove(result.name)
+	else:
+		key = keystream(key, os.path.getsize(operand.name))
+		result = xor_with_key(operand, key)
+	overwrite(result, operand)
+	os.remove(".shade.temp")
+
 terminate("Successful conversion")
