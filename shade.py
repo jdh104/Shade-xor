@@ -12,7 +12,7 @@ key_type_group = parser.add_mutually_exclusive_group(required = True)
 key_type_group.add_argument("-p", metavar = "<K>", dest = "p", help = "Use Passphrase <K> as key", default = None)
 key_type_group.add_argument("-F", metavar = "<K>", dest = "F", help = "Use File <K> as key", default = None)
 key_type_group.add_argument("-G", metavar = "<K>", dest = "G", help = "Generate keyfile named <K>", default = None)
-parser.add_argument("-s", metavar = "<S>", dest = "s", help = "Generate random key of size <S> in bytes (Default: 64) Ignored if -G not used", default = 64, type = int)
+parser.add_argument("-s", metavar = "<S>", dest = "s", help = "Generate random key of size <S> in bytes (Default: 16) Ignored if -G not used (Note: key sizes higher than 16 illegal for international use [USA])", default = 16, type = int)
 parser.add_argument("f", metavar = "<file>", help = "File(s) to operate on", nargs = "*")
 
 args = parser.parse_args()
