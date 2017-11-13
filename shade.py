@@ -56,7 +56,7 @@ def xor_with_file(file_1, file_2):
 	
 	# Initialize below loop
 	x, y = file_1.read(1), file_2.read(1)
-	z = fopen(".shade.temp", "wb+")
+	z = fopen(".shade.temp", "rb+")
 	len_1, len_2 = os.path.getsize(file_1.name), os.path.getsize(file_2.name)
 	check, addup = 0, 0
 	i, mile = 0, 1
